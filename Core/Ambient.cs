@@ -10,24 +10,60 @@ namespace Core
     public class Ambient : IAmbient
     {
         public AmbientBoard map;
+        //private List<IMoves> moveElements;
+        private int filthAmmount;
+        public double filthPercetage;
+        public int looseKids;
 
-        public Ambient(int n, int m, int filthPercent, int obstaclePercent, int childrenCount)
+        //initial parameters
+        int Rows;
+        int Columns;
+        double initFilthPercentage;
+        double initObstaPercentage;
+        int initChildCount;
+        public AmbientBoard AmbientBoard { get { return map; } }
+        
+        public int LooseKids { get { return looseKids; } set { this.looseKids = value; } }
+
+        public double FilthPercentage { get { return filthPercetage; } }
+
+        public int FilthAmmount { get { return filthAmmount; } }
+
+        public Ambient(int n, int m, double filthPercent, double obstaclePercent, int childrenCount)
         {
             map = new AmbientBoard(n, m);
+            Rows = n; Columns = m;
+            initFilthPercentage = filthPercent;
+            initObstaPercentage = obstaclePercent;
+            initChildCount = childrenCount;
             SetInitialState(filthPercent, obstaclePercent, childrenCount);
         }
         public void Mutate()
         {
-            throw new NotImplementedException();
-        }
+            List<Child> children = GetLooseChildren();
+            children = MoveChildren(children);            
+            GenerateFilth(GetSquaresToFilth(children));
+            foreach (Child child in children)
+            {
+                child.UpdateRadius(this);
+            }
+            
+        }        
 
+        public void Reset()
+        {
+            map = new AmbientBoard(Rows, Columns);
+            SetInitialState(initFilthPercentage, initObstaPercentage, initChildCount);
+        }
         public void SetInitialState(params object[] ps)
         {
             SetPlayPen((int)ps[2], map.Rows, map.Columns);
-            SetInitialFilth((int)ps[0]);
-            SetInitialObstacles((int)ps[1]);
+            SetInitialFilth((double)ps[0]);
+            SetInitialObstacles((double)ps[1]);
             SetInitialChildren((int)ps[2]);
             SetInitialRest();
+            filthPercetage = (double)ps[0];
+            looseKids = (int)ps[2];
         }
 
         private void SetPlayPen(int childrenCount, int n, int m)
@@ -53,7 +89,8 @@ namespace Core
                     for (int j = 0; j < factor; j++)
                     {
                         if (set == childrenCount) return;
-                        map.SetElementInside(posx + i, posy + j, new Playpen());
+                        (int i, int j) pos = (posx + i, posy + j);
+                        map.SetElementInside(pos.i, pos.j, new Playpen(map[pos]));
                         set++;
                     }
                 }
@@ -67,7 +104,8 @@ namespace Core
                     for (int j = 0; j < low; j++)
                     {
                         if (set == childrenCount) return;
-                        map[posx + i, posy + j].elementInside = new Playpen();
+                        (int i, int j) pos = (posx + i, posy + j);
+                        map[pos.i, pos.j].elementInside = new Playpen(map[pos]);
                         set++;
                     }
                 }
@@ -75,32 +113,33 @@ namespace Core
 
         }
 
-        private void SetInitialFilth(int filthPercent)
+        private void SetInitialFilth(double filthPercent)
         {
-            int filthTotal = filthPercent * (map.Size) / 100;
+            int filthTotal = (int)(filthPercent * (map.Size) / 100);
             int filthCount = 0;
-            List<Position> possibles = GetAvailablePositions(map);
+            List<(int, int)> possibles = GetAvailablePositions(map);
             while(filthCount < filthTotal && possibles.Count > 0)
             {
                 int rand = new Random().Next(0, possibles.Count);
-                Position pos = possibles[rand];
+                (int i, int j) pos = possibles[rand];
                 possibles.RemoveAt(rand);
-                map.SetElementInside(pos, new Filth());
+                map.SetElementInside(pos, new Filth(map[pos]));
                 filthCount++;
             }
+            filthAmmount = filthTotal;
         }
 
-        private void SetInitialObstacles(int obstaclePercent)
+        private void SetInitialObstacles(double obstaclePercent)
         {
-            int obstTotal = obstaclePercent * (map.Size) / 100;
+            int obstTotal = (int)(obstaclePercent * (map.Size) / 100);
             int obstCount = 0;
-            List<Position> possibles = GetAvailablePositions(map);
+            List<(int, int)> possibles = GetAvailablePositions(map);
             while (obstCount < obstTotal && possibles.Count > 0)
             {
                 int rand = new Random().Next(0, possibles.Count);
-                Position pos = possibles[rand];
+                (int i, int j) pos = possibles[rand];
                 possibles.RemoveAt(rand);
-                map.SetElementInside(pos, new Obstacle());
+                map.SetElementInside(pos, new Obstacle(pos.i, pos.j, map[pos.i, pos.j]));
                 obstCount++;
             }
         }
@@ -108,13 +147,14 @@ namespace Core
         private void SetInitialChildren(int childrenCount)
         {
             int children = 0;
-            List<Position> possibles = GetAvailablePositions(map);
+            List<(int,int)> possibles = GetAvailablePositions(map);
             while (children < childrenCount && possibles.Count > 0)
             {
                 int rand = new Random().Next(0, possibles.Count);
-                Position pos = possibles[rand];
+                (int i,int j) pos = possibles[rand];
                 possibles.RemoveAt(rand);
-                map.SetElementInside(pos, new Child());
+                map.SetElementInside(pos, new Child(pos.i, pos.j, map[pos], children + 1));
+                ((Child)map[pos].elementInside).SetRadius(this);
                 children++;
             }
         }
@@ -122,28 +162,143 @@ namespace Core
 
         private void SetInitialRest()
         {
-            List<Position> rest = GetAvailablePositions(map);
-            foreach (Position pos in rest)
+            List<(int, int)> rest = GetAvailablePositions(map);
+            foreach ((int, int) pos in rest)
             {
                 map.SetElementInside(pos, new FreeBox());
             }
         }
 
-        private List<Position> GetAvailablePositions(AmbientBoard bmap)
+        private List<(int, int)> GetAvailablePositions(AmbientBoard bmap)
         {
-            List<Position> result = new List<Position>();
+            List<(int, int)> result = new List<(int,int)>();
             for (int i = 0; i < bmap.Rows; i++)
             {
                 for (int j = 0; j < bmap.Columns; j++)
                 {
                     if (bmap[i, j].elementInside == null)
-                        result.Add(new Position(i, j));
+                        result.Add((i,j));
                 }
             }
             return result;
         }
+
+        private List<Child> MoveChildren(List<Child> children) 
+        {
+            foreach (Child child in children)
+                child.radius.CheckChildrenInside(this);
+            List<Child> movedChildren = new List<Child>();
+            foreach (Child child in children)
+            {
+                if (child.Move(map))
+                {
+                    movedChildren.Add(child);
+                }
+            }
+            return movedChildren;
+        }
+
+        private List<Child> GetLooseChildren()
+        {
+            List<Child> result = new List<Child>();
+            foreach(AmbientCell cell in map)
+            {
+                if (!cell.IsPlaypen && cell.HasChild)
+                    result.Add((Child)cell.elementInside);
+            }
+            return result;
+        }
+        
+        private List<Square3x3> GetSquaresToFilth(List<Child> children)
+        {
+            if (children.Count == 0) return null;
+            List<Square3x3> temp = new List<Square3x3>();
+            List<Square3x3> result = new List<Square3x3>();
+            List<Child> already = new List<Child>();
+            foreach (Child kid in children)
+            {
+                Child max = kid;
+                foreach (Child mate in kid.radius.childrenInside)
+                {
+                    if (mate.radius.childrenCount > max.radius.childrenCount)
+                        max = mate;
+                }
+                temp.Add(max.radius);
+                //kid.radius = max.radius;
+            }
+            foreach (Square3x3 sq in temp)
+            {
+                Square3x3 tempsq = Square3x3.Copy(sq);
+                tempsq.childrenCount = 0;
+                for (int i = 0; i < sq.childrenInside.Count; i++)
+                {
+                    if(!already.Contains(sq.childrenInside[i]))
+                    {
+                        already.Add(sq.childrenInside[i]);
+                        tempsq.AddChildren(sq.childrenInside[i]);
+                    }
+                }
+                if (tempsq.childrenCount > 0)
+                {
+                    tempsq.SetCellsToFilthCount();
+                    result.Add(tempsq); 
+                }
+            }
+            return result;
+        }
+
+        private void GenerateFilth(List<Square3x3> squares) 
+        {
+            if (squares == null) return;
+            int filthadded = 0;
+            foreach (Square3x3 sq in squares)
+            {
+                List<AmbientCell> tofilth = Square3x3.GetCellsToFilth(sq, this);
+                if (tofilth == null) continue;
+                foreach (AmbientCell cell in tofilth)
+                {
+                    cell.elementInside = new Filth(cell);
+                    filthadded++;
+                }
+            }
+            UpdateFilthPercent(filthadded);
+        }
+
+        public void UpdateFilthPercent(int value)
+        {
+            filthAmmount += value;
+            filthPercetage = filthAmmount * 100 / map.Size;
+        }
+
+        public List<(int, int)> GetFreePositions()
+        {
+            List<(int, int)> result = new List<(int, int)>();
+            for (int i = 0; i < map.Rows; i++)
+            {
+                for (int j = 0; j < map.Columns; j++)
+                {
+                    if (map[i, j].IsFree) result.Add((i, j));
+                }
+            }
+            if(result.Count == 0)
+            {
+                for (int i = 0; i < map.Rows; i++)
+                {
+                    for (int j = 0; j < map.Columns; j++)
+                    {
+                        if (!map[i, j].IsObstacle) result.Add((i, j));
+                    }
+                }
+            }
+            if (result.Count == 0)
+                throw new Exception("Wait...Whaaaat?...The map is a solid block");
+            return result;
+        }
+
+        public void PrintMap()
+        {
+            Console.WriteLine(map);
+        }
     }
-
-
-   
+       
 }
