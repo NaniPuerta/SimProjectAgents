@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 
 namespace Core
@@ -15,6 +17,12 @@ namespace Core
 
         public IAmbientElement Carried { get; set; }
 
+        public Agent() { }
+        public void SetAgent(IAmbient ambient, (int x, int y) initPos)
+        {
+            this.Ambient = ambient;
+            this.Pos = initPos;
+        }
         public Agent(IAmbient ambient, (int x, int y) initPos)
         {
             this.Ambient = ambient;
@@ -22,7 +30,8 @@ namespace Core
         }
         public virtual void DoChores()
         {
-            Move();
+            bool moved = Move();
+            Console.WriteLine("agent moved: " + moved);
         }
 
         public virtual bool Move(params object[] param)
@@ -78,11 +87,32 @@ namespace Core
             }
             return result;
         }
+
+        protected void PickUpChild()
+        {
+            Carried = Ambient.AmbientBoard[Pos].elementInside;
+            Console.WriteLine("picked up kid: " + Carried.ToString());
+        }
+
+        protected void DropChild()
+        {
+            ((Playpen)Ambient.AmbientBoard[Pos].elementInside).child = Carried;
+            Carried = null;
+            Ambient.LooseKids -= 1;
+        }
+        protected void Clean()
+        {
+            Ambient.AmbientBoard[Pos].SetFree();
+            Ambient.UpdateFilthPercent(-1);
+        }
     }
+
 
     public class RandomAgent : Agent
     {
         public RandomAgent(IAmbient ambient, (int i, int j) initPos) : base(ambient, initPos) { }
+        public RandomAgent()
+        { }
         public override bool Move(params object[] param)
         {
             if (Carrying)
@@ -203,7 +233,8 @@ namespace Core
 
         public PseudoRandomAgent(IAmbient ambient, (int i, int j) initPos) : base(ambient, initPos) { }
 
-
+        public PseudoRandomAgent()
+        { }
         public override void DoChores()
         {
             bool moved = Move();
@@ -263,17 +294,9 @@ namespace Core
             return true;
         }
 
-        private void Clean()
-        {
-            Ambient.AmbientBoard[Pos].SetFree();
-            Ambient.UpdateFilthPercent(-1);
-        }
+       
 
-        private void PickUpChild()
-        {
-            Carried = Ambient.AmbientBoard[Pos].elementInside;
-            Console.WriteLine("picked up kid: " + Carried.ToString());
-        }
+        
 
         private (int, int) GetNewPos(bool carrying, out bool ok)
         {
@@ -320,13 +343,130 @@ namespace Core
         //    return Pos;
         //}
 
-        private void DropChild()
-        {
-            ((Playpen)Ambient.AmbientBoard[Pos].elementInside).child = Carried;
-            Carried = null;
-            Ambient.LooseKids -= 1;
-        }
+        
     }
 
+    public class BFSAgent : Agent, IMoves, IAgent, IAmbientElement
+    {
+        public BFSAgent() { }
+
+        public BFSAgent(IAmbient ambient, (int i, int j) initPos) : base(ambient, initPos) { }
+
+
+        public override bool Move(params object[] param)
+        {
+            if(Carrying)
+            { 
+                return MoveCarrying(); 
+            }
+            else if(Ambient.AmbientBoard[Pos].HasChild && !Ambient.AmbientBoard[Pos].IsPlaypen)
+            {
+                PickUpChild();
+                Ambient.AmbientBoard[Pos].SetFree();
+                return MoveCarrying();
+            }
+            else if(Ambient.AmbientBoard[Pos].IsFilthy)
+            {
+                Clean();
+                return false;
+            }
+            return MoveFree();
+        }
+
+        private bool MoveCarrying()
+        {
+            List<(int, int)> path = GetNearestPath(true, typeof(Playpen));
+            if (path.Count == 0) return false;
+            int steps = 0;
+            while (path.Count > 0 && steps < 2)
+            {
+                Pos = path[0];
+                path.RemoveAt(0);
+                steps++;
+            }
+            if(Ambient.AmbientBoard[Pos].IsPlaypen)
+            {
+                DropChild();
+            }
+            return true;
+        }
+
+        private bool MoveFree()
+        {
+            if (Ambient.AmbientBoard[Pos].elementInside == this)
+                Ambient.AmbientBoard[Pos].SetFree();
+            try
+            {
+                (int, int) newpos = GetNearestPath(false, typeof(Child), typeof(Filth))[0];
+                Pos = newpos;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+            
+            if(Ambient.AmbientBoard[Pos].HasChild && !Ambient.AmbientBoard[Pos].IsPlaypen)
+            {
+                PickUpChild();
+                Ambient.AmbientBoard[Pos].elementInside = this;
+            }
+            return true;
+        }
+        
+        public List<(int,int)> GetNearestPath(bool carrying, params Type[] cellTypes)
+        {
+            List<(int, int)> result = new List<(int, int)>();   
+            (int, int)[,] path = new (int, int)[Ambient.AmbientBoard.Rows, Ambient.AmbientBoard.Columns];
+            for (int i = 0; i < path.GetLength(0); i++)
+            {
+                for (int j = 0; j < path.GetLength(1); j++)
+                {
+                    path[i, j] = (-1, -1);
+                }
+            }
+            
+            Queue<(int, int)> queue = new Queue<(int, int)>();
+            queue.Enqueue(Pos);
+            path[Pos.x, Pos.y] = Pos;
+            bool finished = false;
+
+            
+            while(queue.Count > 0 && !finished)
+            {
+                (int, int) currentPos = queue.Dequeue();
+                foreach (IDirection dir in Ambient.AmbientBoard.directions)
+                {
+                    (int x, int y) newpos = Position.GetNext(currentPos, dir);
+                    if(IsValidPosition(carrying, newpos) && path[newpos.x,newpos.y] == (-1,-1))
+                    {
+                        path[newpos.x, newpos.y] = currentPos;
+                        queue.Enqueue(newpos);
+                        if (cellTypes.Contains(Ambient.AmbientBoard[newpos].elementInside.GetType()))
+                        {
+                            result.Add(newpos);
+                            finished = true;
+                            break;
+                        }
+
+                    }
+                }
+            }
+            if (result.Count > 0)
+            {
+                (int x, int y) curPos = result[0];
+                (int, int) newP;
+                while ((newP = path[curPos.x, curPos.y]) != curPos)
+                {
+                    result.Add(newP);
+                    curPos = newP;
+                }
+                result.RemoveAt(result.Count - 1);
+                result.Reverse();
+            }
+            return result;
+
+        }
+
+    }
 
 }

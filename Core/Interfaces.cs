@@ -39,6 +39,7 @@ namespace Core
         public void DoChores();
 
         public void Reset((int, int) newpos, IAmbient newambient);
+        public void SetAgent(IAmbient ambient, (int x, int y) initPos);
     }
 
     public interface IAmbientBox

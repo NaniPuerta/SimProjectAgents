@@ -9,10 +9,11 @@ namespace Core
        
         IAgent agent;
         IAmbient ambient;
-        double finalFilthPercent;
-        int robotFired;
-        int gotAllKids;
+        public double finalFilthPercent;
+        public bool robotFired;
+        public bool gotAllKids;
         int timepassed;
+        List<double> filthPercents;
 
         //initial parameters
         int timelapse;
@@ -41,39 +42,46 @@ namespace Core
         {
             int time = 0;
             timepassed = 0;
+            filthPercents = new List<double>();
+            PrintMap();
+            //Console.ReadLine();
             while(true)
             {
                 if (timepassed == 100)
                 {
-                    finalFilthPercent = ambient.FilthPercentage;
+                    finalFilthPercent = filthPercents.Sum() / filthPercents.Count;
                     return;
                 }
                 if (time == timelapse)
                 {
                     time = 0;
+                    filthPercents.Add(ambient.FilthPercentage);
                     Reset();
                     timepassed++;
                     Console.WriteLine("Ambient Reset");
                 }                
                 if (ambient.FilthPercentage >= 60)
                 {
-                    finalFilthPercent = ambient.FilthPercentage;
-                    robotFired +=1;
+                    //finalFilthPercent = ambient.FilthPercentage;
+                    filthPercents.Add(ambient.FilthPercentage);
+                    finalFilthPercent = filthPercents.Sum() / filthPercents.Count;
+                    robotFired = true;
                     return;
                 }
                 if (ambient.LooseKids == 0 && ambient.FilthAmmount == 0)
                 {
-                    finalFilthPercent = ambient.FilthPercentage;
-                    gotAllKids +=1;
+                    //finalFilthPercent = ambient.FilthPercentage;
+                    finalFilthPercent = filthPercents.Sum() / filthPercents.Count;
+                    gotAllKids = true;
                     return;
                 }
                 agent.DoChores();
                 Console.WriteLine("Agent at: " + agent.Pos);
-                PrintMap();
+                //PrintMap();
                 ambient.Mutate();
                 Console.WriteLine("Ambient mutated");
                 PrintMap();
-                PrintInsideStats();
+                //PrintInsideStats();
                 //Console.ReadLine();
                 time++;
             }
@@ -87,7 +95,7 @@ namespace Core
 
         public void PrintStats()
         {
-            Console.WriteLine("Final Stats: " + "\n    final filth percentage: " + finalFilthPercent + "\n    robot fired: " + robotFired + "\n    got all kids: " + gotAllKids);
+            Console.WriteLine("Final Stats: " + "\n    mean filth percentage: " + finalFilthPercent + "\n    robot fired: " + robotFired + "\n    got all kids: " + gotAllKids);
         }
         public static (int, int) GetRandomInitPosition(IAmbient ambient)
         {
