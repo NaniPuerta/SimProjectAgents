@@ -14,6 +14,7 @@ namespace Core
         private int filthAmmount;
         public double filthPercetage;
         public int looseKids;
+        private int notPenAndNotObs;
 
         //initial parameters
         int Rows;
@@ -21,6 +22,7 @@ namespace Core
         double initFilthPercentage;
         double initObstaPercentage;
         int initChildCount;
+
         public AmbientBoard AmbientBoard { get { return map; } }
         
         public int LooseKids { get { return looseKids; } set { this.looseKids = value; } }
@@ -58,8 +60,8 @@ namespace Core
         public void SetInitialState(params object[] ps)
         {
             SetPlayPen((int)ps[2], map.Rows, map.Columns);
-            SetInitialFilth((double)ps[0]);
             SetInitialObstacles((double)ps[1]);
+            SetInitialFilth((double)ps[0]);
             SetInitialChildren((int)ps[2]);
             SetInitialRest();
             filthPercetage = (double)ps[0];
@@ -115,9 +117,10 @@ namespace Core
 
         private void SetInitialFilth(double filthPercent)
         {
-            int filthTotal = (int)(filthPercent * (map.Size) / 100);
-            int filthCount = 0;
             List<(int, int)> possibles = GetAvailablePositions(map);
+            notPenAndNotObs = possibles.Count;
+            int filthTotal = (int)(filthPercent * (possibles.Count) / 100);
+            int filthCount = 0;
             while(filthCount < filthTotal && possibles.Count > 0)
             {
                 int rand = new Random().Next(0, possibles.Count);
@@ -131,9 +134,9 @@ namespace Core
 
         private void SetInitialObstacles(double obstaclePercent)
         {
-            int obstTotal = (int)(obstaclePercent * (map.Size) / 100);
-            int obstCount = 0;
             List<(int, int)> possibles = GetAvailablePositions(map);
+            int obstTotal = (int)(obstaclePercent * (possibles.Count) / 100);
+            int obstCount = 0;
             while (obstCount < obstTotal && possibles.Count > 0)
             {
                 int rand = new Random().Next(0, possibles.Count);
@@ -261,15 +264,15 @@ namespace Core
                     filthadded++;
                 }
             }
-            UpdateFilthPercent(filthadded);
+            UpdateFilth(filthadded);
         }
 
-        public void UpdateFilthPercent(int value)
+        public void UpdateFilth(int value)
         {
             filthAmmount += value;
-            filthPercetage = filthAmmount * 100 / map.Size;
+            filthPercetage = filthAmmount * 100 / notPenAndNotObs;
         }
-
+               
         public List<(int, int)> GetFreePositions()
         {
             List<(int, int)> result = new List<(int, int)>();

@@ -43,8 +43,6 @@ namespace Core
             int time = 0;
             timepassed = 0;
             filthPercents = new List<double>();
-            PrintMap();
-            //Console.ReadLine();
             while(true)
             {
                 if (timepassed == 100)
@@ -58,31 +56,22 @@ namespace Core
                     filthPercents.Add(ambient.FilthPercentage);
                     Reset();
                     timepassed++;
-                    Console.WriteLine("Ambient Reset");
                 }                
                 if (ambient.FilthPercentage >= 60)
                 {
-                    //finalFilthPercent = ambient.FilthPercentage;
                     filthPercents.Add(ambient.FilthPercentage);
-                    finalFilthPercent = filthPercents.Sum() / filthPercents.Count;
+                    finalFilthPercent = filthPercents.Count == 0 ? 0 : filthPercents.Sum() / filthPercents.Count;
                     robotFired = true;
                     return;
                 }
                 if (ambient.LooseKids == 0 && ambient.FilthAmmount == 0)
                 {
-                    //finalFilthPercent = ambient.FilthPercentage;
-                    finalFilthPercent = filthPercents.Sum() / filthPercents.Count;
+                    finalFilthPercent = filthPercents.Count == 0 ? 0 : filthPercents.Sum() / filthPercents.Count;
                     gotAllKids = true;
                     return;
                 }
                 agent.DoChores();
-                Console.WriteLine("Agent at: " + agent.Pos);
-                //PrintMap();
                 ambient.Mutate();
-                Console.WriteLine("Ambient mutated");
-                PrintMap();
-                //PrintInsideStats();
-                //Console.ReadLine();
                 time++;
             }
             

@@ -1,23 +1,40 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
+using System.IO;
 using Core;
 
 namespace SimProyectAgents
 {
     class Program
     {
-        static IAgent agent;
         static void Main(string[] args)
         {
+            List<IAgent> agents = new List<IAgent>();
 
-            Simulate(new BFSAgent());
+            agents.Add(new PseudoRandomAgent());
+            agents.Add(new BFSAgent());
+            agents.Add(new ChildFirstAgent());
+            agents.Add(new CleanFirstAgent());
+            foreach (IAgent agent in agents)
+            {
+                Directory.CreateDirectory(agent.GetType().Name);
+                Console.WriteLine("new agent");
+                Simulate(agent);
+
+            }
 
         }
 
         private static void Simulate(IAgent simAgent)
         {
+            string pathName = DateTime.Now.ToString();
+            pathName = pathName.Replace('/', '-');
+            pathName = pathName.Replace(':', '.');
+            string folderName = simAgent.GetType().Name;
+            string totalPath = folderName + "\\" + pathName;
+
+
             Ambient[] ambients = new Ambient[10];
             for (int i = 0; i < ambients.Length; i++)
             {
@@ -39,16 +56,16 @@ namespace SimProyectAgents
 
                 for (int i = 0; i < 30; i++)
                 {
-                    Console.WriteLine("New Simulation\n");
-                    //IAgent simAgent = new PseudoRandomAgent(amb, Simulation.GetRandomInitPosition(amb));
+                   // Console.WriteLine("New Simulation\n");
                     simAgent.SetAgent(amb, Simulation.GetRandomInitPosition(amb));
-                    Simulation simulation = new Simulation(InitT(), amb, simAgent);
+                    Simulation simulation = new Simulation(InitT(), amb, simAgent);                    
                     simulation.Run();
                     if (simulation.robotFired)
                         timesRobotFired++;
                     if (simulation.gotAllKids)
                         timesGotAllKids++;
                     filthPercentages.Add(simulation.finalFilthPercent);
+                    amb.Reset();
                 }
                 meanFilth = filthPercentages.Sum() / filthPercentages.Count;
                 robotFired[index] = timesRobotFired;
@@ -56,15 +73,15 @@ namespace SimProyectAgents
                 filths[index] = meanFilth;
                 index++;
             }
-
+            string filecontent = "";
             for (int i = 0; i < ambients.Length; i++)
-            {
-                Console.WriteLine("Ambiente " + i + " :");
-                Console.WriteLine("      Suciedad media: " + filths[i] + " porciento");
-                Console.WriteLine("      Robot despedido: " + robotFired[i] + " veces");
-                Console.WriteLine("      Robot terminó bien: " + gotKids[i] + " veces");
-                Console.WriteLine();
+            {                
+                string content = "Ambiente " + i + " :\n" + "      Suciedad media: " + filths[i] + " porciento\n" + "      Robot despedido: " + robotFired[i] + " veces\n" + "      Robot terminó bien: " + gotKids[i] + " veces\n";
+                Console.WriteLine(content);
+                filecontent += content;
             }
+            totalPath += ".txt";
+            File.WriteAllText(totalPath, filecontent);
         }
 
         public static int InitDim()

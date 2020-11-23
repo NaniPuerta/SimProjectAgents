@@ -31,7 +31,7 @@ namespace Core
         public virtual void DoChores()
         {
             bool moved = Move();
-            Console.WriteLine("agent moved: " + moved);
+            //Console.WriteLine("agent moved: " + moved);
         }
 
         public virtual bool Move(params object[] param)
@@ -91,7 +91,7 @@ namespace Core
         protected void PickUpChild()
         {
             Carried = Ambient.AmbientBoard[Pos].elementInside;
-            Console.WriteLine("picked up kid: " + Carried.ToString());
+            //Console.WriteLine("picked up kid: " + Carried.ToString());
         }
 
         protected void DropChild()
@@ -103,7 +103,7 @@ namespace Core
         protected void Clean()
         {
             Ambient.AmbientBoard[Pos].SetFree();
-            Ambient.UpdateFilthPercent(-1);
+            Ambient.UpdateFilth(-1);
         }
     }
 
@@ -125,7 +125,7 @@ namespace Core
                 {
                     //Ambient.AmbientBoard[Pos].elementInside = this;
                     Ambient.AmbientBoard[Pos].SetFree();
-                    Ambient.UpdateFilthPercent(-1);
+                    Ambient.UpdateFilth(-1);
                     return false;
                 }
 
@@ -238,7 +238,7 @@ namespace Core
         public override void DoChores()
         {
             bool moved = Move();
-            Console.WriteLine("agent moved: " + moved);
+            //Console.WriteLine("agent moved: " + moved);
         }
         public override bool Move(params object[] param)
         {
@@ -273,7 +273,6 @@ namespace Core
             }
             for (int i = 0; i < 2; i++)
             {
-                //(int x, int y) newpos = GetNewPos(true, out bool ok);
                 (int x, int y) newpos = GetNewPos(true, out bool ok);
                 if (!ok) return false;
                 Pos = newpos;
@@ -373,7 +372,7 @@ namespace Core
             return MoveFree();
         }
 
-        private bool MoveCarrying()
+        protected bool MoveCarrying()
         {
             List<(int, int)> path = GetNearestPath(true, typeof(Playpen));
             if (path.Count == 0) return false;
@@ -391,7 +390,7 @@ namespace Core
             return true;
         }
 
-        private bool MoveFree()
+        protected virtual bool MoveFree()
         {
             if (Ambient.AmbientBoard[Pos].elementInside == this)
                 Ambient.AmbientBoard[Pos].SetFree();
@@ -469,4 +468,116 @@ namespace Core
 
     }
 
+    public class ChildFirstAgent: BFSAgent
+    {
+
+        public override bool Move(params object[] param)
+        {
+            if (Carrying)
+            {
+                return MoveCarrying();
+            }
+            else if (Ambient.AmbientBoard[Pos].HasChild && !Ambient.AmbientBoard[Pos].IsPlaypen)
+            {
+                PickUpChild();
+                Ambient.AmbientBoard[Pos].SetFree();
+                return MoveCarrying();
+            }
+            else if (Ambient.AmbientBoard[Pos].IsFilthy && Ambient.LooseKids == 0)
+            {
+                Clean();
+                return false;
+            }
+            return MoveFree();
+        }
+        protected override bool MoveFree()
+        {
+            if (Ambient.AmbientBoard[Pos].elementInside == this)
+                Ambient.AmbientBoard[Pos].SetFree();
+            if (Ambient.LooseKids > 0)
+            {
+                try
+                {
+                    (int, int) newpos = GetNearestPath(false, typeof(Child))[0];
+                    Pos = newpos;
+                    if (Ambient.AmbientBoard[Pos].HasChild && !Ambient.AmbientBoard[Pos].IsPlaypen)
+                    {
+                        PickUpChild();
+                        Ambient.AmbientBoard[Pos].elementInside = this;
+                    }
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                try
+                {
+                    (int, int) newpos = GetNearestPath(false, typeof(Filth))[0];
+                    Pos = newpos;
+                }
+                catch (Exception)
+                { return false; }
+            }            
+            return true;
+        }
+    }
+
+    public class CleanFirstAgent : BFSAgent
+    {
+        public override bool Move(params object[] param)
+        {
+            if (Carrying)
+            {
+                return MoveCarrying();
+            }
+            else if (Ambient.AmbientBoard[Pos].HasChild && !Ambient.AmbientBoard[Pos].IsPlaypen)
+            {
+                PickUpChild();
+                Ambient.AmbientBoard[Pos].SetFree();
+                return MoveCarrying();
+            }
+            else if (Ambient.AmbientBoard[Pos].IsFilthy)
+            {
+                Clean();
+                return false;
+            }
+            return MoveFree();
+        }
+        protected override bool MoveFree()
+        {
+            if (Ambient.AmbientBoard[Pos].elementInside == this)
+                Ambient.AmbientBoard[Pos].SetFree();
+            if (Ambient.FilthAmmount > 0)
+            {
+                try
+                {
+                    (int, int) newpos = GetNearestPath(false, typeof(Filth))[0];
+                    Pos = newpos;                    
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                try
+                {
+                    (int, int) newpos = GetNearestPath(false, typeof(Child))[0];
+                    Pos = newpos;
+                    if (Ambient.AmbientBoard[Pos].HasChild && !Ambient.AmbientBoard[Pos].IsPlaypen)
+                    {
+                        PickUpChild();
+                        Ambient.AmbientBoard[Pos].elementInside = this;
+                    }
+                }
+                catch (Exception)
+                { return false; }
+            }
+            return true;
+        }
+    }
 }

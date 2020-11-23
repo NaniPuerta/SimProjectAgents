@@ -22,7 +22,7 @@ namespace Core
         public void Reset();
         public void SetInitialState(params object[] ps);
 
-        public void UpdateFilthPercent(int value);
+        public void UpdateFilth(int value);
 
         public List<(int, int)> GetFreePositions();
 
@@ -42,10 +42,6 @@ namespace Core
         public void SetAgent(IAmbient ambient, (int x, int y) initPos);
     }
 
-    public interface IAmbientBox
-    {
-
-    }
 
     public interface IMovable
     {
