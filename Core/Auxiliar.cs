@@ -194,15 +194,12 @@ namespace Core
         public void CheckChildrenInside(IAmbient map)
         {
             childrenInside = new List<Child>();
-            //freeCells = new List<AmbientCell>();
             for (int k = initCell.i; k < finishCell.i+1; k++)
             {
                 for (int l = initCell.j; l < finishCell.j+1; l++)
                 {
                     if (!map.AmbientBoard[k,l].IsPlaypen && map.AmbientBoard[k, l].HasChild)
                         childrenInside.Add((Child)map.AmbientBoard[k, l].elementInside);
-                    //else if (map.AmbientBoard[k, l].IsFree)
-                    //    freeCells.Add(map.AmbientBoard[k, l]);
                 }
             }
             SetCellsToFilthCount();
@@ -219,31 +216,6 @@ namespace Core
             };
             childrenCount = childrenInside.Count;
         }
-
-        //public static int CheckHowManyKidsInside(Square3x3 square, IAmbient map, List<Child> alreadyChecked)
-        //{
-        //    int kids = 0;
-        //    for (int k  = square.initCell.i; k < square.finishCell.i; k++)
-        //    {
-        //        for (int l = square.initCell.j; l < square.finishCell.j; l++)
-        //        {
-        //            if (!map.AmbientBoard[k, l].HasChild) continue;
-        //            else 
-        //            {
-        //                if (alreadyChecked.Contains((Child)map.AmbientBoard[k, l].elementInside)) continue;
-        //                else { kids++; alreadyChecked.Add((Child)map.AmbientBoard[k, l].elementInside); }
-        //            }
-        //        }
-        //    }
-        //    square.cellsToFilth = kids switch
-        //    {
-        //        0 => 0,
-        //        1 => 1,
-        //        2 => 3,
-        //        _ => 6,
-        //    };
-        //    return kids;
-        //}
 
         public static List<AmbientCell> GetCellsToFilth(Square3x3 square, IAmbient map)
         {
@@ -320,21 +292,7 @@ namespace Core
 
     #endregion
 
-    #region AuxiliaryStructs
-
-    //public readonly struct Direction
-    //{
-    //    public readonly int x;
-    //    public readonly int y;
-    //    //public (int x, int y) Up => (-1, 0);
-    //    //public (int x, int y) Down => (1, 0);
-    //    //public (int x, int y) Left => (0, -1);
-    //    //public (int x, int y) Right => (0, 1);
-    //    //public (int x, int y) UpLeft => (-1, -1);
-    //    //public (int x, int y) UpRight => (-1, 1);
-    //    //public (int x, int y) DownLeft => (1, -1);
-    //    //public (int x, int y) DownRight => (1, 1);
-    //}
+    #region AuxiliaryStructs  
 
     public readonly struct Up : IDirection
     {

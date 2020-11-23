@@ -10,7 +10,6 @@ namespace Core
     public class Ambient : IAmbient
     {
         public AmbientBoard map;
-        //private List<IMoves> moveElements;
         private int filthAmmount;
         public double filthPercetage;
         public int looseKids;
@@ -72,7 +71,6 @@ namespace Core
         {
             double sq = Math.Sqrt(childrenCount);
             int low = (int)Math.Floor(sq);
-            //int hig = (int)Math.Ceiling(sq);
             int factor = (int)Math.Ceiling(sq);
             int res = low * factor;
             int posx; int posy;
@@ -227,7 +225,6 @@ namespace Core
                         max = mate;
                 }
                 temp.Add(max.radius);
-                //kid.radius = max.radius;
             }
             foreach (Square3x3 sq in temp)
             {

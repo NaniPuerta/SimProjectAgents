@@ -70,7 +70,7 @@ namespace Core
                     gotAllKids = true;
                     return;
                 }
-                agent.DoChores();
+                agent.DoChores();                
                 ambient.Mutate();
                 time++;
             }
@@ -110,7 +110,6 @@ namespace Core
                     bool robotHasChild = robot && agent.Carrying;
 
                     temp[0] = robot ? "@" : " ";
-                    //temp[1] = ac.HasChild || robotHasChild ? "&" : " ";
                     temp[1] = " "; 
                     temp[2] = ac.IsObstacle ? "X" : " ";
                     temp[3] = ac.IsPlaypen ? "#" : " ";

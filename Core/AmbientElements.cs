@@ -44,7 +44,6 @@ namespace Core
     }
     public class Child : IAmbientElement, IMoves
     {
-
         public (int x, int y) Pos { get; set; }
         public AmbientCell Owner { get; set; }
         public int ID;
@@ -58,7 +57,6 @@ namespace Core
             this.ID = ID;
         }
 
-
         public bool Move(params object[] param)
         {
             double rand = new Random().NextDouble();
@@ -71,7 +69,6 @@ namespace Core
                 AmbientCell nextcell = map[nextpos.x1, nextpos.x2];
                 if (nextcell.IsFree || (nextcell.elementInside is IMovable && ((IMovable)nextcell.elementInside).BeMoved(map, dir)))
                 {
-                    //param[1] = (true, this.Pos);
                     Owner.elementInside = new FreeBox();
                     Owner = nextcell;
                     Pos = nextpos;
@@ -79,7 +76,6 @@ namespace Core
                     return true;
                 }
                 else return false;
-
             }
             catch (Exception)
             {
@@ -95,7 +91,6 @@ namespace Core
         {
             this.radius.SetInitAndFinish(Pos, map);
         }
-
         private (int, int) GetNextPos(AmbientBoard map, out IDirection dir)
         {
             List<IDirection> dirs;
@@ -109,7 +104,6 @@ namespace Core
             dir = dirs[rand];
             return (available[rand].Item1, available[rand].Item2);
         }
-
         private List<(int, int)> GetAllAvailablePos(AmbientBoard map, out List<IDirection> dirs)
         {
             List<(int, int)> result = new List<(int, int)>();
@@ -126,13 +120,10 @@ namespace Core
             }
             return result;
         }
-
-
         public override string ToString()
         {
             return ID.ToString();
         }
-
     }
 
     public class Filth : IAmbientElement
@@ -153,9 +144,7 @@ namespace Core
     {
         public IAmbientElement child;
         public bool IsOccupied => child != null;
-
         public AmbientCell Owner { get; set; }
-
         public override string ToString()
         {
             if (IsOccupied)
@@ -171,12 +160,10 @@ namespace Core
     public class FreeBox : IAmbientElement
     {
         public AmbientCell Owner { get; set; }
-
         public override string ToString()
         {
             return "";
         }
-
         public FreeBox()
         { }
         public FreeBox(AmbientCell owner)
