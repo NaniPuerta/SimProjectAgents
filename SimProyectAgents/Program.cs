@@ -56,7 +56,6 @@ namespace SimProyectAgents
 
                 for (int i = 0; i < 30; i++)
                 {
-                   // Console.WriteLine("New Simulation\n");
                     simAgent.SetAgent(amb, Simulation.GetRandomInitPosition(amb));
                     Simulation simulation = new Simulation(InitT(), amb, simAgent);                    
                     simulation.Run();

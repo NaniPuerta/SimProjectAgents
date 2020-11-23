@@ -31,7 +31,6 @@ namespace Core
         public virtual void DoChores()
         {
             bool moved = Move();
-            //Console.WriteLine("agent moved: " + moved);
         }
 
         public virtual bool Move(params object[] param)
@@ -91,7 +90,6 @@ namespace Core
         protected void PickUpChild()
         {
             Carried = Ambient.AmbientBoard[Pos].elementInside;
-            //Console.WriteLine("picked up kid: " + Carried.ToString());
         }
 
         protected void DropChild()
@@ -123,7 +121,6 @@ namespace Core
             { 
                 if(Ambient.AmbientBoard[Pos].IsFilthy && ShouldCleanFilth())
                 {
-                    //Ambient.AmbientBoard[Pos].elementInside = this;
                     Ambient.AmbientBoard[Pos].SetFree();
                     Ambient.UpdateFilth(-1);
                     return false;
@@ -220,12 +217,6 @@ namespace Core
         {
             return false;
         }
-
-        //public void Reset((int, int) newpos, IAmbient newambient)
-        //{
-        //    Pos = newpos;
-        //    Ambient = newambient;
-        //}
     }
 
     public class PseudoRandomAgent : Agent, IAgent, IMoves, IAmbientElement
@@ -238,7 +229,6 @@ namespace Core
         public override void DoChores()
         {
             bool moved = Move();
-            //Console.WriteLine("agent moved: " + moved);
         }
         public override bool Move(params object[] param)
         {
@@ -293,15 +283,10 @@ namespace Core
             return true;
         }
 
-       
-
-        
-
         private (int, int) GetNewPos(bool carrying, out bool ok)
         {
             (int, int) temp = (-1,-1);
             ok = false;
-            //bool freefound = false;
             foreach (IDirection dir in Ambient.AmbientBoard.directions)
             {
                 (int i, int j) newpos = Position.GetNext(Pos, dir);
@@ -327,22 +312,7 @@ namespace Core
             temp = GetNextPosition(carrying, out ok);
             return temp;
         }
-
-        //private (int, int) GetFollowingPos(out bool ok)
-        //{
-        //    ok = false;            
-        //    foreach (IDirection dir in Ambient.AmbientBoard.directions)
-        //    {
-        //        (int i, int j) newpos = Position.GetNext(Pos, dir);
-        //        if (!IsValidPosition(true, newpos)) continue;
-        //        if()
-        //        ok = true;
-        //        return newpos;                
-        //    }
-        //    return Pos;
-        //}
-
-        
+                       
     }
 
     public class BFSAgent : Agent, IMoves, IAgent, IAmbientElement

@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30503.244
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimProyectAgents", "SimProyectAgents\SimProyectAgents.csproj", "{3B5016FF-1AA8-4176-A193-D38EEA18643F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimProjectAgents", "SimProyectAgents\SimProjectAgents.csproj", "{3B5016FF-1AA8-4176-A193-D38EEA18643F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core", "Core\Core.csproj", "{2C6AE1AD-9C1A-4D19-8115-DD33740BF435}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Core", "Core\Core.csproj", "{2C6AE1AD-9C1A-4D19-8115-DD33740BF435}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
