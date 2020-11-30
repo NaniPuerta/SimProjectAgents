@@ -19,21 +19,16 @@ namespace SimProyectAgents
             foreach (IAgent agent in agents)
             {
                 Directory.CreateDirectory(agent.GetType().Name);
-                Console.WriteLine("new agent");
-                Simulate(agent);
-
             }
+            Simulate(agents);
 
         }
 
-        private static void Simulate(IAgent simAgent)
+        private static void Simulate(List<IAgent> agents)
         {
             string pathName = DateTime.Now.ToString();
             pathName = pathName.Replace('/', '-');
-            pathName = pathName.Replace(':', '.');
-            string folderName = simAgent.GetType().Name;
-            string totalPath = folderName + "\\" + pathName;
-
+            pathName = pathName.Replace(':', '.');         
 
             Ambient[] ambients = new Ambient[10];
             for (int i = 0; i < ambients.Length; i++)
@@ -42,45 +37,57 @@ namespace SimProyectAgents
                 int M = InitDim();
                 ambients[i] = new Ambient(N, M, InitFilP(), InitObsP(), InitChiC(N * M));
             }
-            int[] robotFired = new int[ambients.Length];
-            int[] gotKids = new int[ambients.Length];
-            double[] filths = new double[ambients.Length];
-            int index = 0;
-            foreach (Ambient amb in ambients)
-            {
-                Console.WriteLine("New Ambient\n");
-                List<double> filthPercentages = new List<double>();
-                int timesRobotFired = 0;
-                int timesGotAllKids = 0;
-                double meanFilth;
 
-                for (int i = 0; i < 30; i++)
+            foreach (IAgent simAgent in agents)
+            {
+                string folderName = simAgent.GetType().Name;
+                string totalPath = folderName + "\\" + pathName;
+                int[] robotFired = new int[ambients.Length];
+                int[] gotKids = new int[ambients.Length];
+                double[] filths = new double[ambients.Length];
+                int index = 0;
+                foreach (Ambient amb in ambients)
                 {
-                    simAgent.SetAgent(amb, Simulation.GetRandomInitPosition(amb));
-                    Simulation simulation = new Simulation(InitT(), amb, simAgent);                    
-                    simulation.Run();
-                    if (simulation.robotFired)
-                        timesRobotFired++;
-                    if (simulation.gotAllKids)
-                        timesGotAllKids++;
-                    filthPercentages.Add(simulation.finalFilthPercent);
-                    amb.Reset();
+                    Console.WriteLine("New Ambient\n");
+                    List<double> filthPercentages = new List<double>();
+                    int timesRobotFired = 0;
+                    int timesGotAllKids = 0;
+                    double meanFilth;
+
+                    for (int i = 0; i < 30; i++)
+                    {
+                        simAgent.SetAgent(amb, Simulation.GetRandomInitPosition(amb));
+                        Simulation simulation = new Simulation(InitT(), amb, simAgent);
+                        simulation.Run();
+                        if (simulation.robotFired)
+                            timesRobotFired++;
+                        if (simulation.gotAllKids)
+                            timesGotAllKids++;
+                        filthPercentages.Add(simulation.finalFilthPercent);
+                        amb.Reset();
+                    }
+                    meanFilth = filthPercentages.Sum() / filthPercentages.Count;
+                    robotFired[index] = timesRobotFired;
+                    gotKids[index] = timesGotAllKids;
+                    filths[index] = meanFilth;
+                    index++;
                 }
-                meanFilth = filthPercentages.Sum() / filthPercentages.Count;
-                robotFired[index] = timesRobotFired;
-                gotKids[index] = timesGotAllKids;
-                filths[index] = meanFilth;
-                index++;
+                string filecontent = "";
+                for (int i = 0; i < ambients.Length; i++)
+                {
+                    string content = "Ambiente " + i + " :\n" + "      Suciedad media: " + filths[i] + " porciento\n" + "      Robot despedido: " + robotFired[i] + " veces\n" + "      Robot terminó bien: " + gotKids[i] + " veces\n";
+                    Console.WriteLine(content);
+                    filecontent += content;
+                }
+                double tf = filths.Sum() / filths.Length;
+                int trf = robotFired.Sum();
+                int tro = gotKids.Sum();
+                string total = "Totales: (de 300 veces)\n" + "      Suciedad media: " + tf + " porciento\n" + "      Robot despedido: " + trf + " veces\n" + "      Robot terminó bien: " + tro + " veces\n";
+                Console.WriteLine(total);
+                filecontent += total;
+                totalPath += ".txt";
+                File.WriteAllText(totalPath, filecontent);
             }
-            string filecontent = "";
-            for (int i = 0; i < ambients.Length; i++)
-            {                
-                string content = "Ambiente " + i + " :\n" + "      Suciedad media: " + filths[i] + " porciento\n" + "      Robot despedido: " + robotFired[i] + " veces\n" + "      Robot terminó bien: " + gotKids[i] + " veces\n";
-                Console.WriteLine(content);
-                filecontent += content;
-            }
-            totalPath += ".txt";
-            File.WriteAllText(totalPath, filecontent);
         }
 
         public static int InitDim()
